@@ -1,0 +1,34 @@
+Quando for usar esse projeto pela primeira vez, abrir o terminal 
+do vs code  como Command Prompt e digitar os codigos abaixo para instalar 
+frameworks necessários para rodar a aplicação e a pasta node_modules, 
+pois ela é muito pesada para subir para o Github.
+
+
+o que instalar para rodar essa aplicação:
+
+npm init -y
+npm install express nodemon mongoose cors axios body-parser
+npm install dotenv
+npm install bcrypt
+npm install jsonwebtoken
+
+excutando o servidor:
+
+node server.js    ou     npm start
+
+
+
+aplicação com diversas seguranças de tokens JWT.
+
+comando para iniciar o servidor:  npm start
+
+Dantas 18/05
+
+OPINA MAIS
+MONGO_URI=mongodb+srv://brasil09042016:v6o7D2FO43VpKtaT@cluster0.fwgugrb.mongodb.net/api-cep?retryWrites=true&w=majority
+PORT=3000
+JWT_SECRET=suaChaveSecretaSuperSegura
+
+
+BARBEARIA
+mongodb+srv://brasil09042016:v6o7D2FO43VpKtaT@cluster0.o1jqlyl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
