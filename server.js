@@ -5,10 +5,14 @@ const cors = require('cors');
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// Servir arquivos estáticos do frontend (coloque seus HTML/CSS/JS em /public)
+app.use(express.static(path.join(__dirname, "public")));
 
 const mongoURI = process.env.MONGO_URI;
 const port = process.env.PORT || 3000;
@@ -109,7 +113,14 @@ app.post("/login", async (req, res) => {
         }
 
         const token = jwt.sign({ username: user.username, id: user._id }, jwtSecret, { expiresIn: "1h" });
-        res.json({ message: "✅ Login bem-sucedido!", token });
+
+        // Enviando token e URL de redirecionamento para o frontend
+        res.json({
+            sucesso: true,
+            message: "✅ Login bem-sucedido!",
+            token,
+            redirectTo: "/moderador.html"
+        });
     } catch (error) {
         console.error("❌ Erro ao realizar login:", error);
         res.status(500).json({ message: "❌ Erro interno no login." });
