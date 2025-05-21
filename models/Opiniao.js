@@ -18,5 +18,5 @@ const OpiniaoSchema = new mongoose.Schema({
   data: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Barb', OpiniaoSchema);  // <----- onde está escrito 'Barb' é nome da colection que vai ser criada no mongodb
+module.exports = mongoose.model('Barb', OpiniaoSchema);  // <----- onde w está escrito 'Barb' é nome da colection que vai ser criada no mongodb
 
