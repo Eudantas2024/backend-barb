@@ -31,4 +31,8 @@ JWT_SECRET=suaChaveSecretaSuperSegura
 
 
 BARBEARIA
-mongodb+srv://brasil09042016:v6o7D2FO43VpKtaT@cluster0.o1jqlyl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+mongodb+srv://brasil09042016:ImRbVkcF4gzgwH7E@barbearia.zreebsk.mongodb.net/?retryWrites=true&w=majority&appName=barbearia
+ImRbVkcF4gzgwH7E
+
+brasil09042016
+
