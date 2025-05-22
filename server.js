@@ -1,197 +1,138 @@
+// BACKEND (server.js unificado)
+
 require("dotenv").config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const bodyParser = require("body-parser");
-const bcrypt = require("bcrypt");
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const path = require("path");
+const bcrypt = require("bcryptjs");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
+const SECRET = process.env.JWT_SECRET || "segredo";
+
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Servir arquivos estáticos do frontend (coloque seus HTML/CSS/JS em /public)
-app.use(express.static(path.join(__dirname, "public")));
+// Conexão com MongoDB
+mongoose.connect(MONGO_URI)
+  .then(() => console.log("✅ Conectado ao MongoDB"))
+  .catch((err) => console.error("Erro na conexão com MongoDB:", err));
 
-const mongoURI = process.env.MONGO_URI;
-const port = process.env.PORT || 3000;
-const jwtSecret = process.env.JWT_SECRET;
-
-// 📦 Conexão com MongoDB
-mongoose.connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log("✅ Conectado ao MongoDB!"))
-  .catch(err => console.error("❌ Erro na conexão:", err));
-
-// 📄 Schema e Model - Usuário
-const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true },
-}, { timestamps: true });
-
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+// ========================== MODELOS ==========================
+const usuarioSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true }
 });
+const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-const User = mongoose.model("Usuarios", UserSchema);
-
-// 📄 Schema e Model - Opinião
-const OpiniaoSchema = new mongoose.Schema({
-  nome: String,
-  email: String,
-  cep: String,
-  logradouro: String,
-  numero: String,
-  complemento: String,
-  bairro: String,
-  cidade: String,
-  uf: String,
+const opiniaoSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
-  data: { type: Date, default: Date.now }
+  aprovado: { type: Boolean, default: false },
+  criadoEm: { type: Date, default: Date.now }
 });
+const Opiniao = mongoose.model("Opiniao", opiniaoSchema);
 
-const Opiniao = mongoose.model("Clientes", OpiniaoSchema);
+// ========================== MIDDLEWARE ==========================
+function autenticarToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-// 🔐 Middleware de autenticação JWT
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "❌ Token não encontrado." });
+  if (!token) return res.status(401).json({ message: "Token não fornecido." });
 
-    jwt.verify(token, jwtSecret, (err, user) => {
-        if (err) return res.status(403).json({ message: "❌ Token inválido!" });
-        req.user = user;
-        next();
-    });
+  jwt.verify(token, SECRET, (err, usuario) => {
+    if (err) return res.status(403).json({ message: "Token inválido." });
+    req.usuario = usuario;
+    next();
+  });
 }
 
-// ✅ Registro de Usuário
+// ========================== ROTAS PÚBLICAS ==========================
+app.get("/", (req, res) => {
+  res.send("API Opina + online.");
+});
+
 app.post("/register", async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const trimmedUsername = username.trim();
-        const existingUser = await User.findOne({ username: trimmedUsername });
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ message: "Preencha todos os campos." });
 
-        if (existingUser) {
-            return res.status(400).json({ message: "❌ Usuário já cadastrado." });
-        }
-
-        const newUser = new User({ username: trimmedUsername, password: password.trim() });
-        await newUser.save();
-
-        res.json({ message: "✅ Usuário registrado com sucesso!" });
-    } catch (error) {
-        console.error("❌ Erro ao registrar usuário:", error);
-        res.status(500).json({ message: "❌ Erro interno no servidor." });
-    }
-});
-
-// ✅ Login
-app.post("/login", async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const trimmedUsername = username.trim();
-        const user = await User.findOne({ username: trimmedUsername });
-
-        if (!user) {
-            return res.status(401).json({ message: "❌ Usuário não encontrado." });
-        }
-
-        const validPassword = await bcrypt.compare(password.trim(), user.password);
-        if (!validPassword) {
-            return res.status(401).json({ message: "❌ Senha incorreta." });
-        }
-
-        const token = jwt.sign({ username: user.username, id: user._id }, jwtSecret, { expiresIn: "1h" });
-
-        // Enviando token e URL de redirecionamento para o frontend
-        res.json({
-            sucesso: true,
-            message: "✅ Login bem-sucedido!",
-            token,
-            redirectTo: "/moderador.html"
-        });
-    } catch (error) {
-        console.error("❌ Erro ao realizar login:", error);
-        res.status(500).json({ message: "❌ Erro interno no login." });
-    }
-});
-
-// ✅ Rota protegida: perfil do usuário
-app.get("/profile", authenticateToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select("-password");
-        if (!user) return res.status(404).json({ message: "❌ Usuário não encontrado." });
-
-        res.json(user);
-    } catch (error) {
-        console.error("❌ Erro ao buscar perfil:", error);
-        res.status(500).json({ message: "❌ Erro interno ao buscar perfil." });
-    }
-});
-
-// ✅ CRUD de Opiniões (Clientes)
-
-// Criar nova opinião
-app.post('/api/opinioes', async (req, res) => {
   try {
-    const novaOpiniao = new Opiniao(req.body);
-    await novaOpiniao.save();
-    res.status(201).json({ mensagem: '✅ Reclamação registrada com sucesso!' });
-  } catch (err) {
-    res.status(500).json({ erro: '❌ Erro ao registrar reclamação.' });
+    const usuarioExistente = await Usuario.findOne({ username });
+    if (usuarioExistente) return res.status(400).json({ message: "Usuário já existe." });
+
+    const hash = await bcrypt.hash(password, 10);
+    const novoUsuario = new Usuario({ username, password: hash });
+    await novoUsuario.save();
+    res.status(201).json({ message: "Usuário registrado com sucesso." });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao registrar usuário." });
   }
 });
 
-// Listar opiniões
-app.get('/api/opinioes', async (req, res) => {
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
   try {
-    const opinioes = await Opiniao.find().sort({ data: -1 });
+    const usuario = await Usuario.findOne({ username });
+    if (!usuario) return res.status(401).json({ message: "Usuário não encontrado." });
+
+    const senhaValida = await bcrypt.compare(password, usuario.password);
+    if (!senhaValida) return res.status(401).json({ message: "Senha incorreta." });
+
+    const token = jwt.sign({ id: usuario._id }, SECRET, { expiresIn: "2h" });
+    res.status(200).json({ message: "Login bem-sucedido.", token });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao efetuar login." });
+  }
+});
+
+// ========================== ROTAS PROTEGIDAS ==========================
+app.get("/api/conteudo", autenticarToken, (req, res) => {
+  res.json({ message: "Conteúdo restrito acessado." });
+});
+
+app.get("/api/opinioes", async (req, res) => {
+  try {
+    const opinioes = await Opiniao.find({ aprovado: true }).sort({ criadoEm: -1 });
     res.json(opinioes);
   } catch (err) {
-    res.status(500).json({ erro: '❌ Erro ao buscar opiniões.' });
+    res.status(500).json({ message: "Erro ao buscar opiniões." });
   }
 });
 
-// Atualizar opinião por ID
-app.put('/api/opinioes/:id', async (req, res) => {
+app.post("/api/opinioes", async (req, res) => {
+  const { empresa, comentario } = req.body;
+  if (!empresa || !comentario) return res.status(400).json({ message: "Preencha todos os campos." });
+
   try {
-    const opiniaoAtualizada = await Opiniao.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (opiniaoAtualizada) {
-      res.status(200).json({ mensagem: '✅ Reclamação atualizada com sucesso!', opiniao: opiniaoAtualizada });
-    } else {
-      res.status(404).json({ erro: '❌ Reclamação não encontrada.' });
-    }
+    const novaOpiniao = new Opiniao({ empresa, comentario });
+    await novaOpiniao.save();
+    res.status(201).json({ message: "Opinião registrada para moderação." });
   } catch (err) {
-    res.status(500).json({ erro: '❌ Erro ao atualizar reclamação.' });
+    res.status(500).json({ message: "Erro ao salvar opinião." });
   }
 });
 
-// Deletar opinião por ID
-app.delete('/api/opinioes/:id', async (req, res) => {
+app.get("/api/moderar", autenticarToken, async (req, res) => {
   try {
-    const resultado = await Opiniao.findByIdAndDelete(req.params.id);
-    if (resultado) {
-      res.status(200).json({ mensagem: '✅ Reclamação excluída com sucesso!' });
-    } else {
-      res.status(404).json({ erro: '❌ Reclamação não encontrada.' });
-    }
+    const pendentes = await Opiniao.find({ aprovado: false }).sort({ criadoEm: -1 });
+    res.json(pendentes);
   } catch (err) {
-    res.status(500).json({ erro: '❌ Erro ao excluir reclamação.' });
+    res.status(500).json({ message: "Erro ao buscar opiniões pendentes." });
   }
 });
 
-// ✅ Iniciar servidor
-app.listen(port, () => {
-    console.log(`🚀 Servidor rodando na porta ${port}`);
+app.put("/api/moderar/:id", autenticarToken, async (req, res) => {
+  try {
+    await Opiniao.findByIdAndUpdate(req.params.id, { aprovado: true });
+    res.json({ message: "Opinião aprovada." });
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao aprovar opinião." });
+  }
+});
+
+// ========================== INICIAR SERVIDOR ==========================
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
