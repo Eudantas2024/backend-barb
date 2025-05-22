@@ -28,7 +28,7 @@ async function startDatabase() {
 }
 startDatabase();
 
-// ========================== MODELOS ==========================
+// ========================== MODELOS SCHEMAS MONGO DB==========================
 const usuarioSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }
@@ -36,13 +36,12 @@ const usuarioSchema = new mongoose.Schema({
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
 // ✅ Apenas um schema/modelo chamado "Empresa"
-const opiniaoSchema = new mongoose.Schema({
+const empresaSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
-  aprovado: { type: Boolean, default: false },
-  criadoEm: { type: Date, default: Date.now }
+
 });
-const Empresa = mongoose.model("Empresa", opiniaoSchema);
+const Empresa = mongoose.model("Empresa", empresaSchema);
 
 // ========================== MIDDLEWARE ==========================
 function autenticarToken(req, res, next) {
