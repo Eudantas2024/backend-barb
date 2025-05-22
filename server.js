@@ -1,5 +1,3 @@
-// BACKEND (server.js unificado)
-
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -9,16 +7,26 @@ const bcrypt = require("bcryptjs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI;
 const SECRET = process.env.JWT_SECRET || "segredo";
 
 app.use(cors());
 app.use(express.json());
 
-// Conexão com MongoDB
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("✅ Conectado ao MongoDB"))
-  .catch((err) => console.error("Erro na conexão com MongoDB:", err));
+// ========================== CONEXÃO COM MONGODB ==========================
+async function startDatabase() {
+  const { DB_USER, DB_PASS, DB_NAME } = process.env;
+
+  const uri = `mongodb+srv://${DB_USER}:${DB_PASS}@barbearia.zreebsk.mongodb.net/${DB_NAME}?retryWrites=true&w=majority&appName=barbearia`;
+
+  try {
+    await mongoose.connect(uri);
+    console.log("✅ Conectado ao MongoDBAtlas");
+  } catch (error) {
+    console.error("❌ Erro ao conectar ao MongoDB:", error.message);
+    process.exit(1); // Encerra o servidor se a conexão falhar
+  }
+}
+startDatabase();
 
 // ========================== MODELOS ==========================
 const usuarioSchema = new mongoose.Schema({
@@ -56,11 +64,13 @@ app.get("/", (req, res) => {
 
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ message: "Preencha todos os campos." });
+  if (!username || !password)
+    return res.status(400).json({ message: "Preencha todos os campos." });
 
   try {
     const usuarioExistente = await Usuario.findOne({ username });
-    if (usuarioExistente) return res.status(400).json({ message: "Usuário já existe." });
+    if (usuarioExistente)
+      return res.status(400).json({ message: "Usuário já existe." });
 
     const hash = await bcrypt.hash(password, 10);
     const novoUsuario = new Usuario({ username, password: hash });
@@ -97,13 +107,15 @@ app.get("/api/opinioes", async (req, res) => {
     const opinioes = await Opiniao.find({ aprovado: true }).sort({ criadoEm: -1 });
     res.json(opinioes);
   } catch (err) {
+    console.error("Erro ao buscar opiniões:", err);
     res.status(500).json({ message: "Erro ao buscar opiniões." });
   }
 });
 
 app.post("/api/opinioes", async (req, res) => {
   const { empresa, comentario } = req.body;
-  if (!empresa || !comentario) return res.status(400).json({ message: "Preencha todos os campos." });
+  if (!empresa || !comentario)
+    return res.status(400).json({ message: "Preencha todos os campos." });
 
   try {
     const novaOpiniao = new Opiniao({ empresa, comentario });
@@ -134,5 +146,5 @@ app.put("/api/moderar/:id", autenticarToken, async (req, res) => {
 
 // ========================== INICIAR SERVIDOR ==========================
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
