@@ -41,7 +41,15 @@ const opiniaoSchema = new mongoose.Schema({
   aprovado: { type: Boolean, default: false },
   criadoEm: { type: Date, default: Date.now }
 });
-const Opiniao = mongoose.model("Opiniao", opiniaoSchema);
+const Empresa = mongoose.model("Empresa", opiniaoSchema);
+
+const empresaSchema = new mongoose.Schema({
+  empresa: String,
+  comentario: String,
+  aprovado: { type: Boolean, default: false },
+  criadoEm: { type: Date, default: Date.now }
+});
+const Opiniao = mongoose.model("Empresa", opiniaoSchema);
 
 // ========================== MIDDLEWARE ==========================
 function autenticarToken(req, res, next) {
