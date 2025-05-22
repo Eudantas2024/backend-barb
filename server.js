@@ -35,6 +35,7 @@ const usuarioSchema = new mongoose.Schema({
 });
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
+// ✅ Apenas um schema/modelo chamado "Empresa"
 const opiniaoSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
@@ -42,14 +43,6 @@ const opiniaoSchema = new mongoose.Schema({
   criadoEm: { type: Date, default: Date.now }
 });
 const Empresa = mongoose.model("Empresa", opiniaoSchema);
-
-const empresaSchema = new mongoose.Schema({
-  empresa: String,
-  comentario: String,
-  aprovado: { type: Boolean, default: false },
-  criadoEm: { type: Date, default: Date.now }
-});
-const Opiniao = mongoose.model("Empresa", opiniaoSchema);
 
 // ========================== MIDDLEWARE ==========================
 function autenticarToken(req, res, next) {
@@ -110,9 +103,9 @@ app.get("/api/conteudo", autenticarToken, (req, res) => {
   res.json({ message: "Conteúdo restrito acessado." });
 });
 
-app.get("/api/opinioes", async (req, res) => {
+app.get("/api/empresas", async (req, res) => {
   try {
-    const opinioes = await Opiniao.find({ aprovado: true }).sort({ criadoEm: -1 });
+    const opinioes = await Empresa.find({ aprovado: true }).sort({ criadoEm: -1 });
     res.json(opinioes);
   } catch (err) {
     console.error("Erro ao buscar opiniões:", err);
@@ -120,13 +113,13 @@ app.get("/api/opinioes", async (req, res) => {
   }
 });
 
-app.post("/api/opinioes", async (req, res) => {
+app.post("/api/empresas", async (req, res) => {
   const { empresa, comentario } = req.body;
   if (!empresa || !comentario)
     return res.status(400).json({ message: "Preencha todos os campos." });
 
   try {
-    const novaOpiniao = new Opiniao({ empresa, comentario });
+    const novaOpiniao = new Empresa({ empresa, comentario });
     await novaOpiniao.save();
     res.status(201).json({ message: "Opinião registrada para moderação." });
   } catch (err) {
@@ -136,7 +129,7 @@ app.post("/api/opinioes", async (req, res) => {
 
 app.get("/api/moderar", autenticarToken, async (req, res) => {
   try {
-    const pendentes = await Opiniao.find({ aprovado: false }).sort({ criadoEm: -1 });
+    const pendentes = await Empresa.find({ aprovado: false }).sort({ criadoEm: -1 });
     res.json(pendentes);
   } catch (err) {
     res.status(500).json({ message: "Erro ao buscar opiniões pendentes." });
@@ -145,7 +138,7 @@ app.get("/api/moderar", autenticarToken, async (req, res) => {
 
 app.put("/api/moderar/:id", autenticarToken, async (req, res) => {
   try {
-    await Opiniao.findByIdAndUpdate(req.params.id, { aprovado: true });
+    await Empresa.findByIdAndUpdate(req.params.id, { aprovado: true });
     res.json({ message: "Opinião aprovada." });
   } catch (err) {
     res.status(500).json({ message: "Erro ao aprovar opinião." });
