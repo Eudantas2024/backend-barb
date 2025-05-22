@@ -39,6 +39,7 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 const empresaSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
+   aprovado: { type: Boolean, default: false }, // 👈 adicionado
 
 });
 const Empresa = mongoose.model("Empresa", empresaSchema);
