@@ -259,7 +259,7 @@ app.put("/consumidor/anotacoes", autenticarConsumidor, async (req, res) => {
 
 
 
-// ========================== INICIAR SERVIDOR ==========================
+// ======================= INICIAR SERVIDOR ==========================
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
