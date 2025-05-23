@@ -40,8 +40,8 @@ const empresaSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
    aprovado: { type: Boolean, default: false }, // 👈 adicionado
+   }, { timestamps: true }); // 👈 Isso cria automaticamente os campos "createdAt" e "updatedAt"
 
-});
 const Empresa = mongoose.model("Empresa", empresaSchema);
 
 // ========================== MIDDLEWARE ==========================
@@ -105,7 +105,7 @@ app.get("/api/conteudo", autenticarToken, (req, res) => {
 
 app.get("/api/empresas", async (req, res) => {
   try {
-    const opinioes = await Empresa.find({ aprovado: true }).sort({ criadoEm: -1 });
+    const opinioes = await Empresa.find({ aprovado: true }).sort({ createdAt: -1 });
     res.json(opinioes);
   } catch (err) {
     console.error("Erro ao buscar opiniões:", err);
