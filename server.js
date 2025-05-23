@@ -56,6 +56,7 @@ const Consumidor = mongoose.model("Consumidor", consumidorSchema);
 
 
 // ========================== MIDDLEWARE ==========================
+// moderadores
 function autenticarToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -68,6 +69,22 @@ function autenticarToken(req, res, next) {
     next();
   });
 }
+
+//consumidores
+function autenticarConsumidor(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Token não fornecido." });
+
+  jwt.verify(token, SECRET, (err, usuario) => {
+    if (err || usuario.tipo !== "consumidor")
+      return res.status(403).json({ message: "Acesso negado ao consumidor." });
+
+    req.usuario = usuario;
+    next();
+  });
+}
+
 
 // ========================== ROTAS de login ==========================
 app.get("/", (req, res) => {
