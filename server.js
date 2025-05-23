@@ -57,7 +57,7 @@ function autenticarToken(req, res, next) {
   });
 }
 
-// ========================== ROTAS PÚBLICAS ==========================
+// ========================== ROTAS de login ==========================
 app.get("/", (req, res) => {
   res.send("API Opina + online.");
 });
@@ -123,6 +123,16 @@ app.post("/api/empresas", async (req, res) => {
     res.status(201).json({ message: "Opinião registrada para moderação." });
   } catch (err) {
     res.status(500).json({ message: "Erro ao salvar opinião." });
+  }
+});
+
+
+app.delete("/api/moderar/:id", autenticarToken, async (req, res) => {
+  try {
+    await Empresa.findByIdAndDelete(req.params.id);
+    res.json({ message: "Opinião excluída com sucesso." });
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao excluir opinião." });
   }
 });
 
