@@ -35,12 +35,11 @@ const usuarioSchema = new mongoose.Schema({
 });
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-// ✅ Apenas um schema/modelo chamado "Empresa"
 const empresaSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
-   aprovado: { type: Boolean, default: false }, // 👈 adicionado
-   }, { timestamps: true }); // 👈 Isso cria automaticamente os campos "createdAt" e "updatedAt"
+  aprovado: { type: Boolean, default: false }
+}, { timestamps: true });
 
 const Empresa = mongoose.model("Empresa", empresaSchema);
 
@@ -127,9 +126,10 @@ app.post("/api/empresas", async (req, res) => {
   }
 });
 
+// === CORREÇÃO AQUI: corrigido "criadoEm" para "createdAt"
 app.get("/api/moderar", autenticarToken, async (req, res) => {
   try {
-    const pendentes = await Empresa.find({ aprovado: false }).sort({ criadoEm: -1 });
+    const pendentes = await Empresa.find({ aprovado: false }).sort({ createdAt: -1 });
     res.json(pendentes);
   } catch (err) {
     res.status(500).json({ message: "Erro ao buscar opiniões pendentes." });
