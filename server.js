@@ -50,7 +50,8 @@ const Empresa = mongoose.model("Empresa", empresaSchema);
 // consumidores
 const consumidorSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  senha: { type: String, required: true }
+  senha: { type: String, required: true },
+  anotacoes: { type: String, default: "" } // <-- campo de anotações pessoais
 });
 const Consumidor = mongoose.model("Consumidor", consumidorSchema);
 
@@ -234,6 +235,30 @@ app.post("/consumidor/login", async (req, res) => {
     res.status(500).json({ message: "Erro ao efetuar login." });
   }
 });
+
+// Buscar anotações do consumidor autenticado
+app.get("/consumidor/anotacoes", autenticarConsumidor, async (req, res) => {
+  try {
+    const consumidor = await Consumidor.findById(req.usuario.id);
+    res.json({ anotacoes: consumidor.anotacoes });
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao buscar anotações." });
+  }
+});
+
+// Atualizar as anotações
+app.put("/consumidor/anotacoes", autenticarConsumidor, async (req, res) => {
+  try {
+    const { anotacoes } = req.body;
+    await Consumidor.findByIdAndUpdate(req.usuario.id, { anotacoes });
+    res.json({ message: "Anotações salvas com sucesso." });
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao salvar anotações." });
+  }
+});
+
+
+
 // ========================== INICIAR SERVIDOR ==========================
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
