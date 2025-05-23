@@ -29,12 +29,15 @@ async function startDatabase() {
 startDatabase();
 
 // ========================== MODELOS SCHEMAS MONGO DB==========================
+// usuarios
 const usuarioSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }
 });
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
+
+// empresas
 const empresaSchema = new mongoose.Schema({
   empresa: String,
   comentario: String,
@@ -42,6 +45,15 @@ const empresaSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const Empresa = mongoose.model("Empresa", empresaSchema);
+
+
+// consumidores
+const consumidorSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  senha: { type: String, required: true }
+});
+const Consumidor = mongoose.model("Consumidor", consumidorSchema);
+
 
 // ========================== MIDDLEWARE ==========================
 function autenticarToken(req, res, next) {
@@ -170,6 +182,41 @@ app.put("/api/moderar/:id", autenticarToken, async (req, res) => {
   }
 });
 
+
+// Registro de consumidor
+app.post("/consumidor/register", async (req, res) => {
+  const { email, senha } = req.body;
+  if (!email || !senha) return res.status(400).json({ message: "Preencha todos os campos." });
+
+  try {
+    const existente = await Consumidor.findOne({ email });
+    if (existente) return res.status(400).json({ message: "Consumidor já existe." });
+
+    const hash = await bcrypt.hash(senha, 10);
+    const novo = new Consumidor({ email, senha: hash });
+    await novo.save();
+    res.status(201).json({ message: "Consumidor registrado com sucesso." });
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao registrar consumidor." });
+  }
+});
+
+// Login de consumidor
+app.post("/consumidor/login", async (req, res) => {
+  const { email, senha } = req.body;
+  try {
+    const consumidor = await Consumidor.findOne({ email });
+    if (!consumidor) return res.status(401).json({ message: "Consumidor não encontrado." });
+
+    const senhaValida = await bcrypt.compare(senha, consumidor.senha);
+    if (!senhaValida) return res.status(401).json({ message: "Senha incorreta." });
+
+    const token = jwt.sign({ id: consumidor._id, tipo: "consumidor" }, SECRET, { expiresIn: "2h" });
+    res.status(200).json({ message: "Login bem-sucedido.", token });
+  } catch {
+    res.status(500).json({ message: "Erro ao efetuar login." });
+  }
+});
 // ========================== INICIAR SERVIDOR ==========================
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
