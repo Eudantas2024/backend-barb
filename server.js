@@ -126,6 +126,21 @@ app.post("/api/empresas", async (req, res) => {
   }
 });
 
+app.delete("/api/empresas/:id", autenticarToken, async (req, res) => {
+  try {
+    const opiniao = await Empresa.findOne({ _id: req.params.id, aprovado: true });
+
+    if (!opiniao) {
+      return res.status(404).json({ message: "Opinião aprovada não encontrada." });
+    }
+
+    await Empresa.findByIdAndDelete(req.params.id);
+    res.json({ message: "Opinião aprovada excluída com sucesso." });
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao excluir opinião aprovada." });
+  }
+});
+
 
 app.delete("/api/moderar/:id", autenticarToken, async (req, res) => {
   try {
